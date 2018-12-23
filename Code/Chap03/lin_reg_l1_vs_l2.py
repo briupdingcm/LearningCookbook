@@ -5,7 +5,7 @@ from sklearn import datasets
 
 def load_data():
     iris = datasets.load_iris()
-    x_vals = np.array([x[3] for x in iris.data])
+    x_vals = [x[3] for x in iris.data]
     y_vals = np.array([y[0] for y in iris.data])
     return np.transpose(np.matrix(x_vals)), np.transpose(np.matrix(y_vals))
 
@@ -19,7 +19,7 @@ def input():
     rand_y = y_vals[rand_index]
     return rand_x, rand_y
 
-iteration = 50
+iteration = 500
 
 g = tf.Graph()
 with g.as_default():
