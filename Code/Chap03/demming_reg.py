@@ -56,6 +56,7 @@ with g.as_default():
                 print('Step #''' + str(i+1) + ' A = ' + str(sess.run(A)) + ' b = ' + str(sess.run(b)))
                 print('loss = ' + str(temp_loss))
         best_fit = sess.run(model_output, feed_dict={x_data: x_vals, y_target: y_vals})
+        writer = tf.summary.FileWriter('./demming_graph', g)
 
     with tf.name_scope("draw"):
         plt.plot(x_vals, y_vals, 'o', label='Data Points')
