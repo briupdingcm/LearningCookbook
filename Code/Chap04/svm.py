@@ -11,7 +11,7 @@ def load_dataset(indices):
 
 
 def split():
-    size = len(np.array([x[0] for x in iris.data]))
+    size = (iris.data.shape)[0]
     train_indices = np.random.choice(size, round(size * 0.8), replace=False)
     test_indices = np.array(list(set(range(size)) - set(train_indices)))
     return train_indices, test_indices
@@ -19,9 +19,6 @@ def split():
 
 train_indices, test_indices = split()
 
-
-#train_data, train_target = load_dataset(train_indices);
-#test_data, test_target = load_dataset(test_indices)
 
 def input(indices):
     data, target = load_dataset(indices)
@@ -83,9 +80,14 @@ with g.as_default():
             test_accuracy.append(test_acc_temp)
 
             print(temp_loss)
+            [[a1], [a2]] = sess.run(A)
+            [b] = sess.run(b)
+            slope = -a2 / a1
+            y_intercept = b/a1
 
 
     with tf.name_scope('draw'):
+
         plt.plot(train_accuracy, 'r-')
         plt.plot(test_accuracy, 'b-')
         plt.show()
