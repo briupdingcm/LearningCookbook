@@ -13,9 +13,9 @@ second_hidden_nodes = 10
 
 third_hidden_nodes = 8
 
-samples_num = 50000
+samples_num = 30000
 
-iteration = 30000
+iteration = 10000
 
 batch_size = 1000
 
@@ -47,7 +47,7 @@ def get_data():
 
 def draw(X, Y, title):
     c1 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 > y1])
-    c2 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 <= y1])
+    c2 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 < y1])
 
     plt.title(title)
 
@@ -106,7 +106,7 @@ with g.as_default():
         final_out = fully_connect(third_out, w4, b4)
 
     with tf.name_scope('loss'):
-        loss = tf.reduce_mean(tf.square(final_out - y_target))
+        loss = tf.reduce_sum(tf.square(final_out - y_target))
 
     with tf.name_scope('train'):
         my_opt = tf.train.AdamOptimizer(learning_rate)
@@ -120,9 +120,9 @@ with g.as_default():
             rand_x, rand_y = get_data()
 
             sess.run(train_step, feed_dict={x_input: rand_x, y_target: rand_y})
+            total_loss = sess.run(loss, feed_dict={x_input: rand_x, y_target: rand_y})
+            loss_vec.append(total_loss)
             if i % 100 == 0:
-                total_loss = sess.run(loss, feed_dict={x_input: rand_x, y_target: rand_y})
-                loss_vec.append(total_loss)
                 print("loss: " + str(total_loss))
         y_predict = sess.run(final_out, feed_dict={x_input: x, y_target: y})
         print(y_predict)
