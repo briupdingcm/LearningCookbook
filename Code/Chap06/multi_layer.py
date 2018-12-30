@@ -11,13 +11,15 @@ first_hidden_nodes = 10
 
 second_hidden_nodes = 10
 
-samples_num = 30000
+third_hidden_nodes = 8
 
-iteration = 100000
+samples_num = 50000
+
+iteration = 30000
 
 batch_size = 1000
 
-learning_rate = 0.2
+learning_rate = 0.1
 
 def error_rate(Y, Z):
     t1 = [1.0 if e1 >= e2 else 0.0 for [e1, e2] in Y]
@@ -43,51 +45,71 @@ def get_data():
     return rand_x, rand_y
 
 
-def draw():
-    c1 = np.array([x0 for (x0, [y0, y1]) in zip(x, y) if y0 > y1])
-    c2 = np.array([x0 for (x0, [y0, y1]) in zip(x, y) if y0 <= y1])
+def draw(X, Y, title):
+    c1 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 > y1])
+    c2 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 <= y1])
 
-    plt.title('Sample')
+    plt.title(title)
 
     plt.plot(c1[:, 0], c1[:, 1], 'b.')
     plt.plot(c2[:, 0], c2[:, 1], 'r.')
     plt.show()
 
 
-draw()
+draw(x, y, 'Sample')
 
-start_time = dt.datetime.now()
+def init_weight(shape, st_dev):
+    weight = tf.Variable(tf.random_normal(shape, stddev=st_dev, dtype=tf.float32))
+    return weight
+
+
+def init_bais(shape, st_dev):
+    bais = tf.Variable(tf.random_normal(shape, stddev=st_dev, dtype=tf.float32))
+    return bais
+
+
+def fully_connect(input, weight, bais):
+    result = tf.add(tf.matmul(input, weight), bais)
+    return (tf.sigmoid(result))
 
 g = tf.Graph()
 
 with g.as_default():
-    w1 = tf.Variable(tf.random_normal(shape=[input_layer_nodes, first_hidden_nodes], dtype=tf.float32))
-    b1 = tf.Variable(tf.random_normal(shape=[first_hidden_nodes], dtype=tf.float32))
+    start_time = dt.datetime.now()
 
-    w2 = tf.Variable(tf.random_normal(shape=[first_hidden_nodes, second_hidden_nodes], dtype=tf.float32))
-    b2 = tf.Variable(tf.random_normal(shape=[second_hidden_nodes], dtype=tf.float32))
+    w1 = init_weight(shape=[input_layer_nodes, first_hidden_nodes], st_dev=1.0)
+    b1 = init_bais(shape=[first_hidden_nodes], st_dev=1.0)
 
-    w3 = tf.Variable(tf.random_normal(shape=[second_hidden_nodes, output_layer_nodes], dtype=tf.float32))
-    b3 = tf.Variable(tf.random_normal(shape=[output_layer_nodes], dtype=tf.float32))
+    w2 = init_weight(shape=[first_hidden_nodes, second_hidden_nodes], st_dev=1.0)
+    b2 = init_bais(shape=[second_hidden_nodes], st_dev=1.0)
+
+    w3 = init_weight(shape=[second_hidden_nodes, third_hidden_nodes], st_dev=1.0)
+    b3 = init_bais(shape=[third_hidden_nodes], st_dev=1.0)
+
+    w4 = init_weight(shape=[third_hidden_nodes, output_layer_nodes], st_dev=1.0)
+    b4 = init_bais(shape=[output_layer_nodes], st_dev=1.0)
 
     with tf.name_scope('input_layer'):
         x_input = tf.placeholder(shape=[None, input_layer_nodes], dtype=tf.float32)
         y_target = tf.placeholder(shape=[None, output_layer_nodes], dtype=tf.float32)
 
     with tf.name_scope('first_hidden_layer'):
-        first_out = tf.sigmoid(tf.add(tf.matmul(x_input, w1), b1))
+        first_out = fully_connect(x_input, w1, b1)
 
     with tf.name_scope('second_hidden_layer'):
-        second_out = tf.sigmoid(tf.add(tf.matmul(first_out, w2), b2))
+        second_out = fully_connect(first_out, w2, b2)
+
+    with tf.name_scope('third_hidden_layer'):
+        third_out = fully_connect(second_out, w3, b3)
 
     with tf.name_scope('output_layer'):
-        final_out = tf.sigmoid(tf.add(tf.matmul(second_out, w3), b3))
+        final_out = fully_connect(third_out, w4, b4)
 
     with tf.name_scope('loss'):
         loss = tf.reduce_mean(tf.square(final_out - y_target))
 
     with tf.name_scope('train'):
-        my_opt = tf.train.GradientDescentOptimizer(learning_rate)
+        my_opt = tf.train.AdamOptimizer(learning_rate)
         train_step = my_opt.minimize(loss)
 
     loss_vec = []
@@ -98,23 +120,17 @@ with g.as_default():
             rand_x, rand_y = get_data()
 
             sess.run(train_step, feed_dict={x_input: rand_x, y_target: rand_y})
-            error = sess.run(loss, feed_dict={x_input: rand_x, y_target: rand_y})
-            loss_vec.append(error)
             if i % 100 == 0:
-                print("loss: " + str(error))
+                total_loss = sess.run(loss, feed_dict={x_input: rand_x, y_target: rand_y})
+                loss_vec.append(total_loss)
+                print("loss: " + str(total_loss))
         y_predict = sess.run(final_out, feed_dict={x_input: x, y_target: y})
-        end_time = dt.datetime.now()
-        print(end_time - start_time)
+        print(y_predict)
+    end_time = dt.datetime.now()
+    print(end_time - start_time)
 
     with tf.name_scope('draw'):
-        c1 = np.array([x0 for (x0, [y0, y1]) in zip(x, y_predict) if y0 <= y1])
-        c2 = np.array([x0 for (x0, [y0, y1]) in zip(x, y_predict) if y0 > y1])
-
-        plt.title('XOR Result: ' + str(error_rate(y, y_predict)))
-
-        plt.plot(c1[:, 0], c1[:, 1], 'b.')
-        plt.plot(c2[:, 0], c2[:, 1], 'r.')
-        plt.show()
+        draw(x, y_predict, 'XOR Result: ' + str(error_rate(y, y_predict)))
 
         plt.plot(loss_vec, 'r.')
         plt.title('Loss (MSE) per Generation')
