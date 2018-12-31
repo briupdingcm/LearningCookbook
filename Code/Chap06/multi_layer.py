@@ -75,7 +75,7 @@ def init_bais(shape, st_dev):
 
 def fully_connect(input_layer, weights, biases):
     layer = tf.add(tf.matmul(input_layer, weights), biases)
-    return (tf.sigmoid(layer))
+    return tf.sigmoid(layer)
 
 
 with g.as_default():
