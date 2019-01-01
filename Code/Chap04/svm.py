@@ -81,7 +81,7 @@ with g.as_default():
 
             print(temp_loss)
             [[a1], [a2]] = sess.run(A)
-            [b] = sess.run(b)
+            b = sess.run(b)
             slope = -a2 / a1
             y_intercept = b/a1
 

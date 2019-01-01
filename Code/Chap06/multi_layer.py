@@ -13,20 +13,13 @@ second_hidden_nodes = 10
 
 third_hidden_nodes = 8
 
-samples_num = 30000
+samples_num = 30
 
 iteration = 10000
 
 batch_size = 1000
 
 learning_rate = 0.2
-
-def error_rate(Y, Z):
-    t1 = [1.0 if e1 >= e2 else 0.0 for [e1, e2] in Y]
-    t2 = [1.0 if e1 >= e2 else 0.0 for [e1, e2] in Z]
-    t = [1.0 if e1 == e2 else 0.0 for (e1, e2) in zip(t1, t2)]
-    succ = np.sum(t)
-    return succ / len(Y)
 
 
 def dataset():
@@ -40,14 +33,16 @@ x, y = dataset()
 
 def get_data():
     rand_index = np.random.choice(samples_num, size=batch_size)
-    rand_x = x[rand_index]
-    rand_y = y[rand_index]
-    return rand_x, rand_y
+
+    return x[rand_index], y[rand_index]#rand_x, rand_y
 
 
 def draw(X, Y, title):
-    c1 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 > y1])
-    c2 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 <= y1])
+   # test = np.argmax(Y, 1)
+    c1 = X[Y == 1]
+    c2 = X[Y == 0]
+   # c1 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 > y1])
+   # c2 = np.array([x0 for (x0, [y0, y1]) in zip(X, Y) if y0 <= y1])
 
     plt.title(title)
 
@@ -56,7 +51,7 @@ def draw(X, Y, title):
     plt.show()
 
 
-draw(x, y, 'Sample')
+draw(x, np.argmax(y, 1), 'Sample')
 
 start_time = dt.datetime.now()
 
@@ -75,7 +70,7 @@ def init_bais(shape, st_dev):
 
 def fully_connect(input_layer, weights, biases):
     layer = tf.add(tf.matmul(input_layer, weights), biases)
-    return tf.sigmoid(layer)
+    return tf.nn.sigmoid(layer)
 
 
 with g.as_default():
@@ -114,25 +109,35 @@ with g.as_default():
         my_opt = tf.train.AdamOptimizer(learning_rate)
         train_step = my_opt.minimize(loss)
 
+    with tf.name_scope('result'):
+        output_predict = tf.cast(tf.argmax(final_out, 1), tf.float32)
+        output_target = tf.cast(tf.argmax(y_target, 1), tf.float32)
+        correct_mask = tf.equal(output_target, output_predict)#tf.argmax(final_out, 1), tf.argmax(y_target, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_mask, tf.float32))
+
     loss_vec = []
-    init = tf.global_variables_initializer()
     with tf.Session() as sess:
-        sess.run(init)
+        sess.run(tf.global_variables_initializer())
         for i in range(iteration):
             rand_x, rand_y = get_data()
 
             sess.run(train_step, feed_dict={x_input: rand_x, y_target: rand_y})
-            error = sess.run(loss, feed_dict={x_input: rand_x, y_target: rand_y})
-            loss_vec.append(error)
-            if i % 100 == 0:
-                print("loss: " + str(error))
-        y_predict = sess.run(final_out, feed_dict={x_input: x, y_target: y})
+            train_loss = sess.run(loss, feed_dict={x_input: rand_x, y_target: rand_y})
+            loss_vec.append(train_loss)
+
+            if i % 1000 == 0:
+                print("loss: " + str(train_loss))
+
+        y_predict = np.argmax(sess.run(final_out, feed_dict={x_input: x, y_target: y}), 1)
+
+        train_accuracy = sess.run(accuracy, feed_dict={x_input: x, y_target: y})
+        print("accuracy: {}".format(train_accuracy))
 
     end_time = dt.datetime.now()
     print(end_time - start_time)
 
     with tf.name_scope('draw'):
-        draw(x, y_predict, 'XOR Result: ' + str(error_rate(y, y_predict)))
+        draw(x, y_predict, 'XOR Result: {} '.format(train_accuracy))
 
         plt.plot(loss_vec, 'r.')
         plt.title('Loss (MSE) per Generation')
