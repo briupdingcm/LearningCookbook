@@ -13,13 +13,13 @@ second_hidden_nodes = 10
 
 third_hidden_nodes = 8
 
-samples_num = 30
+samples_num = 300000
 
-iteration = 10000
+iteration = 100000
 
 batch_size = 1000
 
-learning_rate = 0.2
+learning_rate = 1e-4
 
 
 def dataset():
@@ -128,7 +128,7 @@ with g.as_default():
             if i % 1000 == 0:
                 print("loss: " + str(train_loss))
 
-        y_predict = np.argmax(sess.run(final_out, feed_dict={x_input: x, y_target: y}), 1)
+        y_predict = sess.run(final_out, feed_dict={x_input: x, y_target: y})
 
         train_accuracy = sess.run(accuracy, feed_dict={x_input: x, y_target: y})
         print("accuracy: {}".format(train_accuracy))
@@ -137,7 +137,7 @@ with g.as_default():
     print(end_time - start_time)
 
     with tf.name_scope('draw'):
-        draw(x, y_predict, 'XOR Result: {} '.format(train_accuracy))
+        draw(x, np.argmax(y_predict, 1), 'XOR Result: {} '.format(train_accuracy))
 
         plt.plot(loss_vec, 'r.')
         plt.title('Loss (MSE) per Generation')
