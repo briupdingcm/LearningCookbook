@@ -1,11 +1,14 @@
-
+import matplotlib.pyplot as plt
 import my_data as md
 import numpy as np
 import tensorflow as tf
 
-DATA_DIR = '/Users/kevinding/MNIST'
+DATA_DIR = '/Users/kevinding/data/ml/MNIST'
 NUM_STEPS = 1000
 MINIBATCH_SIZE = 100
+learning_rate = 1e-4
+
+mnist = md.read_data_sets(DATA_DIR, one_hot=True)
 
 
 def weight_variable(shape):
@@ -36,11 +39,13 @@ def full_layer(input, size):
     in_size = int(input.get_shape()[1])
     W = weight_variable([in_size, size])
     b = bias_variable([size])
-    return tf.matmul(input, W) + b
+    return tf.add(tf.matmul(input, W), b)
+
 
 with tf.Session() as sess:
     x = tf.placeholder(tf.float32, shape=[None, 784])
     y_ = tf.placeholder(tf.float32, shape=[None, 10])
+    keep_prob = tf.placeholder(tf.float32)
 
     with tf.name_scope('input_layer'):
         x_image = tf.reshape(x, [-1, 28, 28, 1])
@@ -57,38 +62,54 @@ with tf.Session() as sess:
     with tf.name_scope('pool_layer_2'):
         conv2_pool = max_pool_2x2(conv2)
 
-    conv2_flat = tf.reshape(conv2_pool, [-1, 7*7*64])
-    full_1 = tf.nn.relu(full_layer(conv2_flat, 1024))
+    with tf.name_scope('full_layer_1'):
+        conv2_flat = tf.reshape(conv2_pool, [-1, 7*7*64])
+        full_1 = tf.nn.relu(full_layer(conv2_flat, 1024))
 
-    keep_prob = tf.placeholder(tf.float32)
-    full1_drop = tf.nn.dropout(full_1, keep_prob=keep_prob)
+    with tf.name_scope('full_layer_2'):
+        full1_drop = tf.nn.dropout(full_1, keep_prob=keep_prob)
+        y_conv = full_layer(full1_drop, 10)
 
-    y_conv = full_layer(full1_drop, 10)
+    with tf.name_scope('loss'):
+        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y_))
 
-    mnist = md.read_data_sets(DATA_DIR, one_hot=True)
+    with tf.name_scope('train'):
+        train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
 
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y_))
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+    with tf.name_scope('accuracy'):
+        correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-STEPS = 5
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+    train_accuracy_list = []
+    test_accuracy_list = []
 
-    for i in range(STEPS):
-        batch = mnist.train.next_batch(50)
 
-        if i % 100 == 0:
-            train_accuracy = sess.run(accuracy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-            print("step {}, training accuracy {}".format(i, train_accuracy))
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
-        sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+        for i in range(NUM_STEPS):
+            batch = mnist.train.next_batch(MINIBATCH_SIZE)
+
+            if i % 100 == 0:
+                train_accuracy = sess.run(accuracy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
+                print("step {}, training accuracy {}".format(i, train_accuracy))
+                train_accuracy_list.append(train_accuracy)
+
+                sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
         X = mnist.test.images.reshape(10, 1000, 784)
         Y = mnist.test.labels.reshape(10, 1000, 10)
-
         test_accuracy = np.mean([sess.run(accuracy, feed_dict={x:X[i], y_:Y[i], keep_prob: 1.0}) for i in range(10)])
 
     print("test accuracy: {}".format(test_accuracy))
 
+    with tf.name_scope('draw'):
+        # Plot the activation values
+        plt.plot(train_accuracy_list, 'r-', label='train accuracy')
+        plt.plot(test_accuracy_list, 'b-', label='test accuracy')
+        plt.ylim([0, 1.0])
+        plt.title('Accuracy Outputs')
+        plt.xlabel('Generation')
+        plt.ylabel('Accuracy')
+        plt.legend(loc='upper right')
+        plt.show()

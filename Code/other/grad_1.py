@@ -1,6 +1,5 @@
 import numpy as np
 np.random.seed(0)
-
 import tensorflow as tf
 N, D = 3, 4
 
