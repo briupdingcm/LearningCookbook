@@ -1,13 +1,12 @@
+
+import my_data as md
 import numpy as np
 import tensorflow as tf
-from sklearn import datasets
-from tensorflow.examples.tutorials.mnist import  input_data
 
-DATA_DIR = '/tmp/data'
+DATA_DIR = '/Users/kevinding/MNIST'
 NUM_STEPS = 1000
 MINIBATCH_SIZE = 100
 
-#data = input_data.read_data_sets(DATA_DIR, one_hot=True)
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=1.0)
@@ -66,9 +65,9 @@ with tf.Session() as sess:
 
     y_conv = full_layer(full1_drop, 10)
 
-    mnist = input_data.read_data_sets(DATA_DIR, one_hot=True)
+    mnist = md.read_data_sets(DATA_DIR, one_hot=True)
 
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_conv, y_))
+cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y_))
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
 correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
