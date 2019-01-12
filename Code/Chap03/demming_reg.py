@@ -20,7 +20,6 @@ def input():
     rand_y = y_vals[rand_idx]
     return rand_x, rand_y
 
-
 g = tf.Graph()
 learning_rate = 0.1
 iteration = 25000
