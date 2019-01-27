@@ -30,6 +30,14 @@ def input(indices):
 x_val_train, y_val_train = input(train_indices)
 x_val_test, y_val_test = input(test_indices)
 
+
+def get_data(x, y, batch_size=50):
+    rand_index = np.random.choice(len(x), size=batch_size)
+    rand_x = x[rand_index]
+    rand_y = y[rand_index]
+    return rand_x, rand_y
+
+
 batch_size = 50
 
 g = tf.Graph()
@@ -67,23 +75,23 @@ with g.as_default():
     with tf.Session() as sess:
         sess.run(init)
         for i in range(1000):
-            rand_index = np.random.choice(len(x_val_train), size=batch_size)
-            rand_x = x_val_train[rand_index]
-            rand_y = y_val_train[rand_index]
-            sess.run(train_step, feed_dict={x_data:rand_x, y_target:rand_y})
-            temp_loss = sess.run(loss, feed_dict={x_data:rand_x, y_target:rand_y})
+            rand_x, rand_y = get_data(x_val_train, y_val_train, batch_size)
+            sess.run(train_step, feed_dict={x_data: rand_x, y_target: rand_y})
 
+            temp_loss = sess.run(loss, feed_dict={x_data: rand_x, y_target: rand_y})
             loss_vec.append(temp_loss)
+
             train_acc_temp = sess.run(accuracy, feed_dict={x_data: x_val_train, y_target: y_val_train})
             train_accuracy.append(train_acc_temp)
+
             test_acc_temp = sess.run(accuracy, feed_dict={x_data: x_val_test, y_target: y_val_test})
             test_accuracy.append(test_acc_temp)
 
             print(temp_loss)
             [[a1], [a2]] = sess.run(A)
-            b = sess.run(b)
+            b1 = sess.run(b)
             slope = -a2 / a1
-            y_intercept = b/a1
+            y_intercept = b1/a1
 
 
     with tf.name_scope('draw'):

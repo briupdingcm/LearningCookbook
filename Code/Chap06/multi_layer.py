@@ -72,7 +72,6 @@ def fully_connect(input_layer, weights, biases):
     layer = tf.add(tf.matmul(input_layer, weights), biases)
     return tf.nn.sigmoid(layer)
 
-
 with g.as_default():
     w1 = init_weight(shape=[input_layer_nodes, first_hidden_nodes], st_dev=1.0)
     b1 = init_bais(shape=[first_hidden_nodes], st_dev=1.0)
