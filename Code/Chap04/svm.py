@@ -5,7 +5,6 @@ import sklearn.datasets as datasets
 
 iris = datasets.load_iris()
 
-
 def load_dataset(indices):
     return iris.data[indices], iris.target[indices]
 
@@ -22,14 +21,13 @@ train_indices, test_indices = split()
 
 def input(indices):
     data, target = load_dataset(indices)
-    x_vals = np.array([[x[0], x[1]] for x in data])
+    x_vals = np.array([[x[0], x[3]] for x in data])
     y_vals = np.array([1 if y == 0 else -1 for y in target])
     return np.matrix(x_vals), np.transpose(np.matrix(y_vals))
 
 
 x_val_train, y_val_train = input(train_indices)
 x_val_test, y_val_test = input(test_indices)
-
 
 def get_data(x, y, batch_size=50):
     rand_index = np.random.choice(len(x), size=batch_size)
@@ -74,7 +72,7 @@ with g.as_default():
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
         sess.run(init)
-        for i in range(1000):
+        for i in range(500):
             rand_x, rand_y = get_data(x_val_train, y_val_train, batch_size)
             sess.run(train_step, feed_dict={x_data: rand_x, y_target: rand_y})
 
@@ -87,18 +85,56 @@ with g.as_default():
             test_acc_temp = sess.run(accuracy, feed_dict={x_data: x_val_test, y_target: y_val_test})
             test_accuracy.append(test_acc_temp)
 
-            print(temp_loss)
-            [[a1], [a2]] = sess.run(A)
-            b1 = sess.run(b)
-            slope = -a2 / a1
-            y_intercept = b1/a1
+            if ((i+1) % 100) == 0:
+                print("step# " + str(i+1) + " A = " + str(sess.run(A)) + " b = " + str(sess.run(b)))
+                print("loss: " + str(temp_loss))
+        [[a1], [a2]] = sess.run(A)
+        b1 = sess.run(b)
+        print(a1, a2, b1)
 
 
-    with tf.name_scope('draw'):
+slope = -a2 / a1
+y_intercept = (b1/a1)[0][0]
+print(slope, y_intercept)
 
-        plt.plot(train_accuracy, 'r-')
-        plt.plot(test_accuracy, 'b-')
-        plt.show()
+x_vals = np.array([[x[0], x[3]] for x in iris.data])
+y_vals = np.array([1 if y == 0 else -1 for y in iris.target])
 
-        plt.plot(loss_vec, 'r-')
-        plt.show()
+x1_vals = [d[1] for d in x_vals]
+best_fits = []
+for x in x1_vals:
+    best_fits.append(x * slope + y_intercept)
+
+
+setosa_x = [d[1] for i, d in enumerate(x_vals) if y_vals[i] == 1]
+setosa_y = [d[0] for i, d in enumerate(x_vals) if y_vals[i] == 1]
+
+not_setosa_x = [d[1] for i, d in enumerate(x_vals) if y_vals[i] == -1]
+not_setosa_y = [d[0] for i, d in enumerate(x_vals) if y_vals[i] == -1]
+
+
+plt.plot(setosa_x, setosa_y, 'o', label='I. setosa')
+plt.plot(not_setosa_x, not_setosa_y, 'x', label='Non-setosa')
+plt.plot(x1_vals, best_fits, 'r-', label='linear separator', linewidth=3)
+plt.ylim([0, 10])
+plt.legend(loc='lower right')
+plt.title('Sepal Length vs Pedal Width')
+plt.xlabel('Pedal Width')
+plt.ylabel('Sepal Length')
+plt.show()
+
+
+plt.plot(train_accuracy, 'k-', label='Training Accuracy')
+plt.plot(test_accuracy, 'r--', label='Test Accuracy')
+plt.title('Train and Test Set Accuracies')
+plt.xlabel('Generation')
+plt.ylabel('Accuracy')
+plt.legend(loc='lower right')
+plt.show()
+
+
+plt.plot(loss_vec, 'k-')
+plt.title('Loss per Generation')
+plt.xlabel('Generation')
+plt.ylabel('Loss')
+plt.show()
